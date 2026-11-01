@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>追逐小游戏</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #87CEEB, #E0F6FF, #FFE4E1);
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .game-container {
+            position: relative;
+            width: 1000px;
+            height: 600px;
+            background: linear-gradient(to bottom, 
+                #87CEEB 0%, 
+                #B0E0E6 25%, 
+                #E0F6FF 50%, 
+                #F0F8FF 75%, 
+                #FFF8DC 100%);
+            border: 3px solid #4682B4;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 15px 40px rgba(70, 130, 180, 0.3);
+        }
+
+        #gameCanvas {
+            display: block;
+            background: transparent;
+        }
+
+        .ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .timer {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 36px;
+            font-weight: bold;
+            color: #2C3E50;
+            text-shadow: 2px 2px 4px rgba(255,255,255,0.8);
+            background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(240,248,255,0.8));
+            padding: 15px 25px;
+            border-radius: 20px;
+            border: 2px solid rgba(70, 130, 180, 0.3);
+            box-shadow: 0 8px 20px rgba(70, 130, 180, 0.2);
+        }
+
+        .player-info {
+            position: absolute;
+            top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #2C3E50;
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+            background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(240,248,255,0.8));
+            padding: 10px 18px;
+            border-radius: 15px;
+            border: 2px solid rgba(70, 130, 180, 0.3);
+            box-shadow: 0 5px 15px rgba(70, 130, 180, 0.2);
+        }
+
+        .player1-info {
+            left: 20px;
+        }
+
+        .player2-info {
+            right: 20px;
+        }
+
+        .intro-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 24px;
+            text-align: center;
+            z-index: 20;
+        }
+
+        .intro-screen h1 {
+            font-size: 48px;
+            margin-bottom: 30px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
+        }
+
+        .intro-screen p {
+            margin: 10px 0;
+            font-size: 20px;
+        }
+
+        .game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 32px;
+            text-align: center;
+            z-index: 20;
+        }
+
+        .game-over-screen h1 {
+            font-size: 64px;
+            margin-bottom: 30px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
+        }
+
+        .restart-btn {
+            margin-top: 30px;
+            padding: 15px 30px;
+            font-size: 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .restart-btn:hover {
+            background: #45a049;
+        }
+
+        .controls-info {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #2C3E50;
+            text-align: center;
+            font-size: 16px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(240,248,255,0.8));
+            padding: 12px 25px;
+            border-radius: 15px;
+            border: 2px solid rgba(70, 130, 180, 0.3);
+            box-shadow: 0 5px 15px rgba(70, 130, 180, 0.2);
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+        }
+
+        .audio-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 15;
+        }
+
+        .audio-btn {
+            padding: 10px 15px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(240,248,255,0.8));
+            color: #2C3E50;
+            border: 2px solid rgba(70, 130, 180, 0.3);
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            box-shadow: 0 3px 10px rgba(70, 130, 180, 0.2);
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+        }
+
+        .audio-btn:hover {
+            background: linear-gradient(135deg, rgba(240,248,255,0.95), rgba(255,255,255,0.9));
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(70, 130, 180, 0.3);
+        }
+
+        .audio-btn.active {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <canvas id="gameCanvas" width="1000" height="600"></canvas>
+        
+        <div class="ui-overlay">
+            <div class="timer" id="timer">60</div>
+            <div class="player-info player1-info" id="player1Info">玩家1: 逃跑者</div>
+            <div class="player-info player2-info" id="player2Info">玩家2: 追逐者</div>
+            <div class="controls-info">
+                玩家1: A/D移动 W跳跃 | 玩家2: ←/→移动 ↑跳跃
+            </div>
+            <div class="audio-controls">
+                <button class="audio-btn" id="musicBtn" onclick="toggleMusic()">🎵 音乐</button>
+                <button class="audio-btn" id="soundBtn" onclick="toggleSound()">🔊 音效</button>
+            </div>
+        </div>
+
+        <div class="intro-screen" id="introScreen">
+            <h1>☁️ 天空追逐小游戏 ☁️</h1>
+            <p>🌤️ 玩家1 (绿色): 使用 A/D 移动，W 跳跃</p>
+            <p>🌤️ 玩家2 (红色): 使用 ←/→ 移动，↑ 跳跃</p>
+            <p>☁️ 在云朵间追逐，追逐者碰到逃跑者时攻防交换！</p>
+            <p>⏰ 60秒后逃跑者获胜！</p>
+        </div>
+
+        <div class="game-over-screen" id="gameOverScreen">
+            <h1 id="winnerText">游戏结束</h1>
+            <button class="restart-btn" onclick="restartGame()">重新开始</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 音频系统
+        let audioContext;
+        let audioSettings = {
+            musicEnabled: true,
+            soundEnabled: true,
+            backgroundMusic: null,
+            musicGain: null,
+            soundGain: null
+        };
+
+        // 初始化音频系统
+        function initAudio() {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                audioSettings.musicGain = audioContext.createGain();
+                audioSettings.soundGain = audioContext.createGain();
+                audioSettings.musicGain.connect(audioContext.destination);
+                audioSettings.soundGain.connect(audioContext.destination);
+                audioSettings.musicGain.gain.value = 0.3; // 背景音乐音量
+                audioSettings.soundGain.gain.value = 0.5; // 音效音量
+            } catch (e) {
+                console.log('音频系统初始化失败:', e);
+            }
+        }
+
+        // 生成音效
+        function createSound(frequency, duration, type = 'sine') {
+            if (!audioContext || !audioSettings.soundEnabled) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioSettings.soundGain);
+            
+            oscillator.frequency.value = frequency;
+            oscillator.type = type;
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+
+        // 播放击杀音效
+        function playCatchSound() {
+            if (!audioSettings.soundEnabled) return;
+            
+            // 创建复合音效 - 低音到高音的上升音效
+            const frequencies = [200, 300, 400, 500];
+            frequencies.forEach((freq, index) => {
+                setTimeout(() => {
+                    createSound(freq, 0.2, 'square');
+                }, index * 50);
+            });
+        }
+
+        // 播放跳跃音效
+        function playJumpSound() {
+            if (!audioSettings.soundEnabled) return;
+            createSound(400, 0.1, 'triangle');
+        }
+
+        // 播放游戏结束音效
+        function playGameOverSound() {
+            if (!audioSettings.soundEnabled) return;
+            
+            // 下降音效
+            const frequencies = [500, 400, 300, 200, 100];
+            frequencies.forEach((freq, index) => {
+                setTimeout(() => {
+                    createSound(freq, 0.3, 'sawtooth');
+                }, index * 100);
+            });
+        }
+
+        // 播放背景音乐
+        function playBackgroundMusic() {
+            if (!audioContext || !audioSettings.musicEnabled) return;
+            
+            // 创建更长的追逐游戏主题音乐
+            const playMelody = () => {
+                if (!audioSettings.musicEnabled) return;
+                
+                // 主旋律 - 更长的音乐段落
+                const mainMelody = [
+                    // 第一段 - 上升音阶
+                    { freq: 220.00, duration: 0.3 }, // A3
+                    { freq: 246.94, duration: 0.3 }, // B3
+                    { freq: 261.63, duration: 0.3 }, // C4
+                    { freq: 293.66, duration: 0.3 }, // D4
+                    { freq: 329.63, duration: 0.3 }, // E4
+                    { freq: 349.23, duration: 0.3 }, // F4
+                    { freq: 392.00, duration: 0.3 }, // G4
+                    { freq: 440.00, duration: 0.6 }, // A4
+                    
+                    // 第二段 - 下降音阶
+                    { freq: 440.00, duration: 0.3 }, // A4
+                    { freq: 392.00, duration: 0.3 }, // G4
+                    { freq: 349.23, duration: 0.3 }, // F4
+                    { freq: 329.63, duration: 0.3 }, // E4
+                    { freq: 293.66, duration: 0.3 }, // D4
+                    { freq: 261.63, duration: 0.3 }, // C4
+                    { freq: 246.94, duration: 0.3 }, // B3
+                    { freq: 220.00, duration: 0.6 }, // A3
+                    
+                    // 第三段 - 高音域
+                    { freq: 261.63, duration: 0.3 }, // C4
+                    { freq: 293.66, duration: 0.3 }, // D4
+                    { freq: 329.63, duration: 0.3 }, // E4
+                    { freq: 349.23, duration: 0.3 }, // F4
+                    { freq: 392.00, duration: 0.3 }, // G4
+                    { freq: 440.00, duration: 0.3 }, // A4
+                    { freq: 493.88, duration: 0.3 }, // B4
+                    { freq: 523.25, duration: 0.6 }, // C5
+                    
+                    // 第四段 - 回到起点
+                    { freq: 523.25, duration: 0.3 }, // C5
+                    { freq: 493.88, duration: 0.3 }, // B4
+                    { freq: 440.00, duration: 0.3 }, // A4
+                    { freq: 392.00, duration: 0.3 }, // G4
+                    { freq: 349.23, duration: 0.3 }, // F4
+                    { freq: 329.63, duration: 0.3 }, // E4
+                    { freq: 293.66, duration: 0.3 }, // D4
+                    { freq: 261.63, duration: 0.6 }  // C4
+                ];
+                
+                // 低音伴奏 - 更长的节奏
+                const bassLine = [
+                    { freq: 110.00, duration: 0.6 }, // A2
+                    { freq: 123.47, duration: 0.6 }, // B2
+                    { freq: 130.81, duration: 0.6 }, // C3
+                    { freq: 146.83, duration: 0.6 }, // D3
+                    { freq: 164.81, duration: 0.6 }, // E3
+                    { freq: 174.61, duration: 0.6 }, // F3
+                    { freq: 196.00, duration: 0.6 }, // G3
+                    { freq: 220.00, duration: 1.2 }, // A3
+                    
+                    // 低音第二段
+                    { freq: 220.00, duration: 0.6 }, // A3
+                    { freq: 196.00, duration: 0.6 }, // G3
+                    { freq: 174.61, duration: 0.6 }, // F3
+                    { freq: 164.81, duration: 0.6 }, // E3
+                    { freq: 146.83, duration: 0.6 }, // D3
+                    { freq: 130.81, duration: 0.6 }, // C3
+                    { freq: 123.47, duration: 0.6 }, // B2
+                    { freq: 110.00, duration: 1.2 }  // A2
+                ];
+                
+                // 和声层 - 增加音乐丰富度
+                const harmony = [
+                    { freq: 330.00, duration: 1.2 }, // E4
+                    { freq: 370.00, duration: 1.2 }, // F#4
+                    { freq: 415.00, duration: 1.2 }, // G#4
+                    { freq: 440.00, duration: 1.2 }, // A4
+                    { freq: 415.00, duration: 1.2 }, // G#4
+                    { freq: 370.00, duration: 1.2 }, // F#4
+                    { freq: 330.00, duration: 1.2 }, // E4
+                    { freq: 293.66, duration: 2.4 }  // D4
+                ];
+                
+                // 播放主旋律
+                mainMelody.forEach((note, index) => {
+                    setTimeout(() => {
+                        if (audioSettings.musicEnabled) {
+                            const oscillator = audioContext.createOscillator();
+                            const gainNode = audioContext.createGain();
+                            
+                            oscillator.connect(gainNode);
+                            gainNode.connect(audioSettings.musicGain);
+                            
+                            oscillator.frequency.value = note.freq;
+                            oscillator.type = 'triangle';
+                            
+                            gainNode.gain.setValueAtTime(0.06, audioContext.currentTime);
+                            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + note.duration);
+                            
+                            oscillator.start(audioContext.currentTime);
+                            oscillator.stop(audioContext.currentTime + note.duration);
+                        }
+                    }, index * 300);
+                });
+                
+                // 播放低音伴奏
+                bassLine.forEach((note, index) => {
+                    setTimeout(() => {
+                        if (audioSettings.musicEnabled) {
+                            const oscillator = audioContext.createOscillator();
+                            const gainNode = audioContext.createGain();
+                            
+                            oscillator.connect(gainNode);
+                            gainNode.connect(audioSettings.musicGain);
+                            
+                            oscillator.frequency.value = note.freq;
+                            oscillator.type = 'sawtooth';
+                            
+                            gainNode.gain.setValueAtTime(0.04, audioContext.currentTime);
+                            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + note.duration);
+                            
+                            oscillator.start(audioContext.currentTime);
+                            oscillator.stop(audioContext.currentTime + note.duration);
+                        }
+                    }, index * 600);
+                });
+                
+                // 播放和声层
+                harmony.forEach((note, index) => {
+                    setTimeout(() => {
+                        if (audioSettings.musicEnabled) {
+                            const oscillator = audioContext.createOscillator();
+                            const gainNode = audioContext.createGain();
+                            
+                            oscillator.connect(gainNode);
+                            gainNode.connect(audioSettings.musicGain);
+                            
+                            oscillator.frequency.value = note.freq;
+                            oscillator.type = 'sine';
+                            
+                            gainNode.gain.setValueAtTime(0.03, audioContext.currentTime);
+                            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + note.duration);
+                            
+                            oscillator.start(audioContext.currentTime);
+                            oscillator.stop(audioContext.currentTime + note.duration);
+                        }
+                    }, index * 1200);
+                });
+                
+                // 循环播放 - 更长的循环时间
+                setTimeout(() => {
+                    if (audioSettings.musicEnabled) {
+                        playMelody();
+                    }
+                }, Math.max(mainMelody.length * 300, bassLine.length * 600, harmony.length * 1200) + 1000);
+            };
+            
+            playMelody();
+        }
+
+        // 切换音乐
+        function toggleMusic() {
+            audioSettings.musicEnabled = !audioSettings.musicEnabled;
+            const btn = document.getElementById('musicBtn');
+            
+            if (audioSettings.musicEnabled) {
+                btn.classList.add('active');
+                btn.textContent = '🎵 音乐';
+                if (audioContext) {
+                    playBackgroundMusic();
+                }
+            } else {
+                btn.classList.remove('active');
+                btn.textContent = '🔇 音乐';
+            }
+        }
+
+        // 切换音效
+        function toggleSound() {
+            audioSettings.soundEnabled = !audioSettings.soundEnabled;
+            const btn = document.getElementById('soundBtn');
+            
+            if (audioSettings.soundEnabled) {
+                btn.classList.add('active');
+                btn.textContent = '🔊 音效';
+            } else {
+                btn.classList.remove('active');
+                btn.textContent = '🔇 音效';
+            }
+        }
+        
+        // 游戏状态
+        let gameState = {
+            phase: 'intro', // intro, playing, gameOver
+            timeLeft: 60,
+            player1: {
+                x: 100,
+                y: 500,
+                width: 30,
+                height: 30,
+                vx: 0,
+                vy: 0,
+                onGround: false,
+                isChaser: false,
+                color: '#00FF00',
+                invincibleTime: 0
+            },
+            player2: {
+                x: 800,
+                y: 500,
+                width: 30,
+                height: 30,
+                vx: 0,
+                vy: 0,
+                onGround: false,
+                isChaser: true,
+                color: '#FF0000',
+                invincibleTime: 0
+            },
+            platforms: [
+                { x: 200, y: 450, width: 180, height: 30, type: 'cloud' },
+                { x: 400, y: 400, width: 160, height: 25, type: 'cloud' },
+                { x: 600, y: 350, width: 170, height: 28, type: 'cloud' },
+                { x: 300, y: 300, width: 190, height: 32, type: 'cloud' },
+                { x: 700, y: 250, width: 165, height: 26, type: 'cloud' }
+            ],
+            keys: {},
+            introTimer: 5,
+            gameTimer: null,
+            invincibleDuration: 3000 // 3秒无敌时间（毫秒）
+        };
+
+        // 物理常量
+        const GRAVITY = 0.8;
+        const JUMP_POWER = -15;
+        const MOVE_SPEED = 5;
+        const FRICTION = 0.8;
+        
+        // 帧率控制
+        const TARGET_FPS = 60; // 目标帧率
+        const FRAME_TIME = 1000 / TARGET_FPS; // 每帧时间（毫秒）
+        let lastTime = 0;
+        let gameLoopId = null;
+
+        // 键盘事件监听
+        document.addEventListener('keydown', (e) => {
+            gameState.keys[e.code] = true;
+        });
+
+        document.addEventListener('keyup', (e) => {
+            gameState.keys[e.code] = false;
+        });
+
+        // 初始化游戏
+        function initGame() {
+            gameState.phase = 'intro';
+            gameState.timeLeft = 60;
+            gameState.introTimer = 5;
+            gameState.player1.isChaser = false;
+            gameState.player2.isChaser = true;
+            gameState.player1.color = '#00FF00';
+            gameState.player2.color = '#FF0000';
+            gameState.player1.x = 100;
+            gameState.player1.y = 500;
+            gameState.player2.x = 800;
+            gameState.player2.y = 500;
+            gameState.player1.vx = 0;
+            gameState.player1.vy = 0;
+            gameState.player2.vx = 0;
+            gameState.player2.vy = 0;
+            gameState.player1.invincibleTime = 0;
+            gameState.player2.invincibleTime = 0;
+            
+            // 设置音频按钮初始状态
+            document.getElementById('musicBtn').classList.add('active');
+            document.getElementById('soundBtn').classList.add('active');
+            
+            document.getElementById('introScreen').style.display = 'flex';
+            document.getElementById('gameOverScreen').style.display = 'none';
+            
+            startIntroTimer();
+        }
+
+        // 开始介绍计时器
+        function startIntroTimer() {
+            const introInterval = setInterval(() => {
+                gameState.introTimer--;
+                if (gameState.introTimer <= 0) {
+                    clearInterval(introInterval);
+                    startGame();
+                }
+            }, 1000);
+        }
+
+        // 开始游戏
+        function startGame() {
+            gameState.phase = 'playing';
+            document.getElementById('introScreen').style.display = 'none';
+            
+            // 初始化音频系统
+            if (!audioContext) {
+                initAudio();
+            }
+            
+            // 开始背景音乐
+            if (audioSettings.musicEnabled) {
+                playBackgroundMusic();
+            }
+            
+            // 开始游戏计时器
+            gameState.gameTimer = setInterval(() => {
+                gameState.timeLeft--;
+                document.getElementById('timer').textContent = gameState.timeLeft;
+                
+                if (gameState.timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+            
+            // 初始化帧率控制
+            lastTime = performance.now();
+            gameLoopId = requestAnimationFrame(gameLoop);
+        }
+
+        // 游戏主循环 - 固定帧率版本
+        function gameLoop(currentTime) {
+            if (gameState.phase !== 'playing') return;
+            
+            // 计算时间差
+            const deltaTime = currentTime - lastTime;
+            
+            // 如果时间差大于等于目标帧时间，则更新游戏
+            if (deltaTime >= FRAME_TIME) {
+                update();
+                draw();
+                lastTime = currentTime;
+            }
+            
+            // 继续循环
+            gameLoopId = requestAnimationFrame(gameLoop);
+        }
+
+        // 更新游戏状态
+        function update() {
+            updatePlayer(gameState.player1, ['KeyA', 'KeyD', 'KeyW']);
+            updatePlayer(gameState.player2, ['ArrowLeft', 'ArrowRight', 'ArrowUp']);
+            
+            checkCollisions();
+            updateUI();
+        }
+
+        // 更新玩家状态
+        function updatePlayer(player, controls) {
+            const currentTime = Date.now();
+            const isInvincible = player.invincibleTime > currentTime;
+            
+            // 如果玩家是追逐者且处于无敌状态，则不能移动
+            if (player.isChaser && isInvincible) {
+                player.vx = 0;
+                player.vy = 0;
+                return;
+            }
+            
+            // 水平移动
+            if (gameState.keys[controls[0]]) { // 左
+                player.vx = -MOVE_SPEED;
+            } else if (gameState.keys[controls[1]]) { // 右
+                player.vx = MOVE_SPEED;
+            } else {
+                player.vx *= FRICTION;
+            }
+            
+            // 跳跃
+            if (gameState.keys[controls[2]] && player.onGround) {
+                player.vy = JUMP_POWER;
+                player.onGround = false;
+                playJumpSound(); // 播放跳跃音效
+            }
+            
+            // 应用重力
+            player.vy += GRAVITY;
+            
+            // 更新位置
+            player.x += player.vx;
+            player.y += player.vy;
+            
+            // 边界检查
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+            if (player.y > canvas.height - player.height) {
+                player.y = canvas.height - player.height;
+                player.vy = 0;
+                player.onGround = true;
+            }
+            
+            // 平台碰撞检测
+            checkPlatformCollision(player);
+        }
+
+        // 检查平台碰撞
+        function checkPlatformCollision(player) {
+            player.onGround = false;
+            
+            // 检查地面
+            if (player.y + player.height >= canvas.height - 10) {
+                player.onGround = true;
+                return;
+            }
+            
+            // 检查所有平台
+            for (let platform of gameState.platforms) {
+                // 检查玩家是否在平台上方
+                if (player.x + player.width > platform.x &&
+                    player.x < platform.x + platform.width &&
+                    player.y + player.height >= platform.y &&
+                    player.y + player.height <= platform.y + 20 &&
+                    player.vy >= 0) {
+                    
+                    player.y = platform.y - player.height;
+                    player.vy = 0;
+                    player.onGround = true;
+                    break;
+                }
+            }
+        }
+
+        // 检查碰撞
+        function checkCollisions() {
+            const p1 = gameState.player1;
+            const p2 = gameState.player2;
+            
+            // 检查玩家之间的碰撞
+            if (p1.x < p2.x + p2.width &&
+                p1.x + p1.width > p2.x &&
+                p1.y < p2.y + p2.height &&
+                p1.y + p1.height > p2.y) {
+                
+                // 检查是否有人处于无敌状态
+                const currentTime = Date.now();
+                const p1Invincible = p1.invincibleTime > currentTime;
+                const p2Invincible = p2.invincibleTime > currentTime;
+                
+                // 如果没有人处于无敌状态，则进行攻防交换
+                if (!p1Invincible && !p2Invincible) {
+                    swapRoles();
+                }
+            }
+        }
+
+        // 攻防交换
+        function swapRoles() {
+            const currentTime = Date.now();
+            
+            gameState.player1.isChaser = !gameState.player1.isChaser;
+            gameState.player2.isChaser = !gameState.player2.isChaser;
+            
+            // 交换颜色
+            gameState.player1.color = gameState.player1.isChaser ? '#FF0000' : '#00FF00';
+            gameState.player2.color = gameState.player2.isChaser ? '#FF0000' : '#00FF00';
+            
+            // 设置无敌时间 - 新成为追逐者的玩家获得3秒无敌时间
+            if (gameState.player1.isChaser) {
+                gameState.player1.invincibleTime = currentTime + gameState.invincibleDuration;
+            } else {
+                gameState.player2.invincibleTime = currentTime + gameState.invincibleDuration;
+            }
+            
+            // 播放击杀音效
+            playCatchSound();
+        }
+
+        // 更新UI
+        function updateUI() {
+            const p1Info = document.getElementById('player1Info');
+            const p2Info = document.getElementById('player2Info');
+            
+            const currentTime = Date.now();
+            const p1Invincible = gameState.player1.invincibleTime > currentTime;
+            const p2Invincible = gameState.player2.invincibleTime > currentTime;
+            
+            let p1Text = `玩家1: ${gameState.player1.isChaser ? '追逐者' : '逃跑者'}`;
+            let p2Text = `玩家2: ${gameState.player2.isChaser ? '追逐者' : '逃跑者'}`;
+            
+            // 添加无敌状态显示
+            if (p1Invincible) {
+                const remainingTime = Math.ceil((gameState.player1.invincibleTime - currentTime) / 1000);
+                p1Text += ` (无敌${remainingTime}s)`;
+            }
+            if (p2Invincible) {
+                const remainingTime = Math.ceil((gameState.player2.invincibleTime - currentTime) / 1000);
+                p2Text += ` (无敌${remainingTime}s)`;
+            }
+            
+            p1Info.textContent = p1Text;
+            p2Info.textContent = p2Text;
+            
+            p1Info.style.color = gameState.player1.color;
+            p2Info.style.color = gameState.player2.color;
+        }
+
+        // 绘制游戏
+        function draw() {
+            // 清空画布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制天空装饰 - 太阳
+            drawSun();
+            
+            // 绘制云朵平台
+            for (let platform of gameState.platforms) {
+                drawCloud(platform);
+            }
+            
+            // 绘制玩家
+            drawPlayer(gameState.player1);
+            drawPlayer(gameState.player2);
+        }
+
+        // 绘制太阳
+        function drawSun() {
+            const sunX = 850;
+            const sunY = 80;
+            const sunRadius = 40;
+            
+            // 太阳光晕
+            const gradient = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunRadius + 20);
+            gradient.addColorStop(0, 'rgba(255, 255, 0, 0.3)');
+            gradient.addColorStop(1, 'rgba(255, 255, 0, 0)');
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(sunX, sunY, sunRadius + 20, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 太阳主体
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.arc(sunX, sunY, sunRadius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 太阳边框
+            ctx.strokeStyle = '#FFA500';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        }
+
+        // 绘制云朵
+        function drawCloud(cloud) {
+            const x = cloud.x;
+            const y = cloud.y;
+            const width = cloud.width;
+            const height = cloud.height;
+            
+            // 云朵主体渐变
+            const gradient = ctx.createLinearGradient(x, y, x, y + height);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+            gradient.addColorStop(0.5, 'rgba(240, 248, 255, 0.8)');
+            gradient.addColorStop(1, 'rgba(220, 220, 220, 0.7)');
+            
+            ctx.fillStyle = gradient;
+            
+            // 绘制云朵的不规则形状
+            ctx.beginPath();
+            
+            // 云朵底部
+            ctx.moveTo(x + width * 0.1, y + height);
+            ctx.lineTo(x + width * 0.9, y + height);
+            
+            // 云朵右侧
+            ctx.quadraticCurveTo(x + width, y + height * 0.7, x + width * 0.8, y + height * 0.3);
+            ctx.quadraticCurveTo(x + width * 0.9, y, x + width * 0.6, y);
+            
+            // 云朵顶部
+            ctx.quadraticCurveTo(x + width * 0.4, y - height * 0.2, x + width * 0.2, y);
+            ctx.quadraticCurveTo(x, y + height * 0.2, x + width * 0.1, y + height * 0.5);
+            
+            // 云朵左侧
+            ctx.quadraticCurveTo(x, y + height * 0.8, x + width * 0.1, y + height);
+            
+            ctx.closePath();
+            ctx.fill();
+            
+            // 云朵边框
+            ctx.strokeStyle = 'rgba(200, 200, 200, 0.6)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // 云朵高光
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.beginPath();
+            ctx.ellipse(x + width * 0.3, y + height * 0.2, width * 0.15, height * 0.1, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // 绘制玩家
+        function drawPlayer(player) {
+            const currentTime = Date.now();
+            const isInvincible = player.invincibleTime > currentTime;
+            
+            // 如果处于无敌状态，添加闪烁效果
+            if (isInvincible && player.isChaser) {
+                const flashRate = Math.sin(currentTime * 0.01) > 0;
+                if (flashRate) {
+                    ctx.fillStyle = '#FFFF00'; // 无敌时显示黄色
+                } else {
+                    ctx.fillStyle = player.color;
+                }
+            } else {
+                ctx.fillStyle = player.color;
+            }
+            
+            // 绘制玩家身体 - 圆形
+            ctx.beginPath();
+            ctx.arc(player.x + player.width/2, player.y + player.height/2, player.width/2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 添加玩家边框
+            ctx.strokeStyle = '#2C3E50';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            // 添加玩家阴影
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.beginPath();
+            ctx.ellipse(player.x + player.width/2 + 2, player.y + player.height + 2, player.width/2, 4, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 添加眼睛
+            ctx.fillStyle = '#FFF';
+            ctx.beginPath();
+            ctx.arc(player.x + player.width/2 - 6, player.y + player.height/2 - 3, 4, 0, Math.PI * 2);
+            ctx.arc(player.x + player.width/2 + 6, player.y + player.height/2 - 3, 4, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#2C3E50';
+            ctx.beginPath();
+            ctx.arc(player.x + player.width/2 - 6, player.y + player.height/2 - 3, 2, 0, Math.PI * 2);
+            ctx.arc(player.x + player.width/2 + 6, player.y + player.height/2 - 3, 2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 添加嘴巴
+            ctx.strokeStyle = '#2C3E50';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(player.x + player.width/2, player.y + player.height/2 + 2, 6, 0, Math.PI);
+            ctx.stroke();
+            
+            // 如果处于无敌状态，添加特殊标记
+            if (isInvincible && player.isChaser) {
+                ctx.fillStyle = '#FFD700';
+                ctx.font = 'bold 12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('无敌', player.x + player.width/2, player.y - 8);
+                ctx.textAlign = 'left';
+            }
+        }
+
+        // 结束游戏
+        function endGame() {
+            gameState.phase = 'gameOver';
+            clearInterval(gameState.gameTimer);
+            
+            // 停止游戏循环
+            if (gameLoopId) {
+                cancelAnimationFrame(gameLoopId);
+                gameLoopId = null;
+            }
+            
+            // 播放游戏结束音效
+            playGameOverSound();
+            
+            const winner = gameState.player1.isChaser ? '玩家2' : '玩家1';
+            document.getElementById('winnerText').textContent = `${winner} 获胜！`;
+            document.getElementById('gameOverScreen').style.display = 'flex';
+        }
+
+        // 重新开始游戏
+        function restartGame() {
+            initGame();
+        }
+
+        // 启动游戏
+        initGame();
+    </script>
+</body>
+</html>
+
